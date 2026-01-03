@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AuthProvider } from "@/features/auth/context/auth-context"
 import { ThemeProvider } from "@/components/theme-provider"
+import { ClientOnly } from "@/components/client-only"
 import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
@@ -39,12 +40,14 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es">
-      <body className={`font-sans antialiased`}>
+    <html lang="es" suppressHydrationWarning>
+      <body className={`font-sans antialiased`} suppressHydrationWarning>
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-            {children}
-            <Toaster />
+            <ClientOnly>
+              {children}
+              <Toaster />
+            </ClientOnly>
           </ThemeProvider>
         </AuthProvider>
         <Analytics />
