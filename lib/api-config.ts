@@ -6,7 +6,7 @@ export const API_CONFIG = {
   LOGIN_API_URL: process.env.NEXT_PUBLIC_LOGIN_API_URL || 'http://localhost:8190',
   MESSAGES_API_URL: process.env.NEXT_PUBLIC_MESSAGES_API_URL || 'http://localhost:8082',
   CONTACTS_API_URL: process.env.NEXT_PUBLIC_CONTACTS_API_URL || 'http://localhost:8081',
-  CHANNELS_API_URL: process.env.NEXT_PUBLIC_CHANNELS_API_URL || 'http://localhost:8085',
+  CHANNELS_API_URL: process.env.NEXT_PUBLIC_CHANNELS_API_URL || 'http://localhost:8095',
   SCHEDULER_API_URL: process.env.NEXT_PUBLIC_SCHEDULER_API_URL || 'http://localhost:8083',
   ANALYTICS_API_URL: process.env.NEXT_PUBLIC_ANALYTICS_API_URL || 'http://localhost:8084',
   

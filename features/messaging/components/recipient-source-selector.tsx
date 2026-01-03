@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Input } from "@/components/ui/input"
@@ -11,13 +11,20 @@ import { Database, FileUp, Upload, User } from "lucide-react"
 
 type SourceType = "manual" | "database" | "csv" | "json"
 
+interface RecipientInfo {
+  phone: string
+  name?: string
+}
+
 interface RecipientSourceSelectorProps {
   onSourceChange?: (source: SourceType) => void
+  onRecipientsChange?: (recipients: RecipientInfo[]) => void
   disabled?: boolean
 }
 
 export function RecipientSourceSelector({
   onSourceChange,
+  onRecipientsChange,
   disabled,
 }: RecipientSourceSelectorProps) {
   const [source, setSource] = useState<SourceType>("manual")
@@ -32,16 +39,77 @@ export function RecipientSourceSelector({
   // Derive recipientType from source
   const recipientType = source === "manual" ? "single" : "multiple"
 
+  // Notify parent when manual data changes
+  const notifyRecipientsChange = useCallback((data: typeof manualData) => {
+    if (source === "manual" && data.phone) {
+      onRecipientsChange?.([{ phone: data.phone, name: data.name || undefined }])
+    } else if (source === "manual") {
+      onRecipientsChange?.([])
+    }
+  }, [source, onRecipientsChange])
+
+  // Update recipients when manual data changes
+  useEffect(() => {
+    if (source === "manual") {
+      notifyRecipientsChange(manualData)
+    }
+  }, [manualData, source, notifyRecipientsChange])
+
   const handleSourceChange = (value: SourceType) => {
     setSource(value)
     setSelectedFile(null)
     onSourceChange?.(value)
+    // Clear recipients when changing source
+    onRecipientsChange?.([])
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const parseCSVFile = async (file: File): Promise<RecipientInfo[]> => {
+    const text = await file.text()
+    const lines = text.split('\n').filter(line => line.trim())
+    const recipients: RecipientInfo[] = []
+    
+    for (const line of lines) {
+      const parts = line.split(',').map(p => p.trim())
+      if (parts.length >= 2) {
+        recipients.push({
+          name: parts[0],
+          phone: parts[1],
+        })
+      } else if (parts.length === 1 && parts[0]) {
+        recipients.push({ phone: parts[0] })
+      }
+    }
+    
+    return recipients
+  }
+
+  const parseJSONFile = async (file: File): Promise<RecipientInfo[]> => {
+    const text = await file.text()
+    try {
+      const data = JSON.parse(text)
+      const items = Array.isArray(data) ? data : [data]
+      return items.map((item: Record<string, string>) => ({
+        phone: item.numero || item.phone || item.telefono || '',
+        name: item.nombre || item.name || undefined,
+      })).filter((r: RecipientInfo) => r.phone)
+    } catch {
+      return []
+    }
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       setSelectedFile(file)
+      
+      let recipients: RecipientInfo[] = []
+      if (source === 'csv') {
+        recipients = await parseCSVFile(file)
+      } else if (source === 'json') {
+        recipients = await parseJSONFile(file)
+      }
+      
+      onRecipientsChange?.(recipients)
     }
   }
 

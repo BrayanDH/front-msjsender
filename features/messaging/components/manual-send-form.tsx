@@ -6,23 +6,74 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Send } from "lucide-react"
+import { Send, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { RecipientSourceSelector } from "./recipient-source-selector"
+import { messagesService, type RecipientInfo, type SendMessageRequest } from "@/lib/messages-service"
 
 
 export function ManualSendForm() {
   const [message, setMessage] = useState("")
   const [channels, setChannels] = useState<string[]>(["whatsapp"])
   const [sourceType, setSourceType] = useState<"manual" | "database" | "csv" | "json">("manual")
+  const [recipients, setRecipients] = useState<RecipientInfo[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleRecipientsChange = (newRecipients: RecipientInfo[]) => {
+    setRecipients(newRecipients)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    toast({
-      title: "Mensaje enviado",
-      description: "Tu mensaje ha sido enviado exitosamente",
-    })
+    
+    if (recipients.length === 0) {
+      toast({
+        title: "Error",
+        description: "Debes agregar al menos un destinatario",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (channels.length === 0) {
+      toast({
+        title: "Error",
+        description: "Debes seleccionar al menos un canal de envío",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsLoading(true)
+    
+    try {
+      const request: SendMessageRequest = {
+        message,
+        channels: channels as Array<'whatsapp' | 'sms'>,
+        recipients,
+      }
+
+      const response = await messagesService.sendMessage(request)
+      
+      if (response.success) {
+        toast({
+          title: "Mensaje enviado",
+          description: `Se enviaron ${response.data.messages_queued} mensajes exitosamente`,
+        })
+        // Reset form
+        setMessage("")
+        setRecipients([])
+      }
+    } catch (error) {
+      toast({
+        title: "Error al enviar",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const toggleChannel = (channel: string) => {
@@ -41,6 +92,7 @@ export function ManualSendForm() {
             onChange={(e) => setMessage(e.target.value)}
             required
             rows={5}
+            disabled={isLoading}
           />
           <p className="text-xs text-muted-foreground">{message.length} caracteres</p>
         </div>
@@ -53,6 +105,7 @@ export function ManualSendForm() {
                 id="whatsapp"
                 checked={channels.includes("whatsapp")}
                 onCheckedChange={() => toggleChannel("whatsapp")}
+                disabled={isLoading}
               />
               <label
                 htmlFor="whatsapp"
@@ -62,7 +115,12 @@ export function ManualSendForm() {
               </label>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox id="sms" checked={channels.includes("sms")} onCheckedChange={() => toggleChannel("sms")} />
+              <Checkbox 
+                id="sms" 
+                checked={channels.includes("sms")} 
+                onCheckedChange={() => toggleChannel("sms")}
+                disabled={isLoading}
+              />
               <label
                 htmlFor="sms"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -73,12 +131,24 @@ export function ManualSendForm() {
           </div>
         </div>
 
-        <RecipientSourceSelector onSourceChange={setSourceType} />
+        <RecipientSourceSelector 
+          onSourceChange={setSourceType}
+          onRecipientsChange={handleRecipientsChange}
+        />
       </div>
 
-      <Button type="submit" className="w-full gap-2">
-        <Send className="size-4" />
-        Enviar Ahora
+      <Button type="submit" className="w-full gap-2" disabled={isLoading || recipients.length === 0}>
+        {isLoading ? (
+          <>
+            <Loader2 className="size-4 animate-spin" />
+            Enviando...
+          </>
+        ) : (
+          <>
+            <Send className="size-4" />
+            Enviar Ahora ({recipients.length} destinatario{recipients.length !== 1 ? 's' : ''})
+          </>
+        )}
       </Button>
     </form>
   )
