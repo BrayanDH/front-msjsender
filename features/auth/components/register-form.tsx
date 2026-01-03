@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { MessageSquare, AlertCircle, Loader2, CheckCircle2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useAuth } from "@/features/auth/context/auth-context"
+import { useAuthContext } from "@/features/auth/context/auth-context"
 
 export function RegisterForm() {
   const [formData, setFormData] = useState({
@@ -21,7 +21,8 @@ export function RegisterForm() {
   })
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const { register, isLoading } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
+  const { register } = useAuthContext()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -50,6 +51,7 @@ export function RegisterForm() {
     }
 
     try {
+      setIsLoading(true)
       await register({
         email: formData.email,
         password: formData.password,
@@ -64,6 +66,8 @@ export function RegisterForm() {
       } else {
         setError("Error al registrar. Por favor intenta de nuevo.")
       }
+    } finally {
+      setIsLoading(false)
     }
   }
 

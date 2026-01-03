@@ -1,23 +1,15 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import React, { createContext, useContext, useEffect, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { authService } from '@/lib/auth-service'
+import { useAuth } from '../hooks/use-auth'
 import type {
   AuthContextType,
-  AuthState,
-  User,
   RegisterRequest,
   UpdateProfileRequest,
   ChangePasswordRequest,
 } from '@/lib/types/auth.types'
-
-const initialState: AuthState = {
-  user: null,
-  token: null,
-  isAuthenticated: false,
-  isLoading: true,
-}
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
@@ -25,104 +17,62 @@ const AuthContext = createContext<AuthContextType | null>(null)
 const PUBLIC_ROUTES = ['/', '/login', '/register']
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState>(initialState)
+  const { user, isAuthenticated, isLoading, error, login: storeLogin, logout: storeLogout, clearError } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
 
-  // Initialize auth state from localStorage
-  useEffect(() => {
-    const initializeAuth = async () => {
-      const token = authService.getStoredToken()
-      const storedUser = authService.getStoredUser()
-
-      if (token && storedUser) {
-        // Validate session with the server
-        const isValid = await authService.validateSession()
-        
-        if (isValid) {
-          setState({
-            user: storedUser,
-            token,
-            isAuthenticated: true,
-            isLoading: false,
-          })
-        } else {
-          // Session invalid, clear state
-          setState({
-            ...initialState,
-            isLoading: false,
-          })
-        }
-      } else {
-        setState({
-          ...initialState,
-          isLoading: false,
-        })
-      }
-    }
-
-    initializeAuth()
-  }, [])
-
   // Route protection effect
   useEffect(() => {
-    if (state.isLoading) return
+    if (isLoading) return
 
     const isPublicRoute = PUBLIC_ROUTES.includes(pathname)
 
-    if (!state.isAuthenticated && !isPublicRoute) {
+    if (!isAuthenticated && !isPublicRoute) {
+      // Store the attempted path for redirect after login
+      sessionStorage.setItem('redirect_after_login', pathname)
       // Redirect to login if trying to access protected route
       router.push('/login')
-    } else if (state.isAuthenticated && (pathname === '/login' || pathname === '/register')) {
-      // Redirect to dashboard if already authenticated
-      router.push('/dashboard')
+    } else if (isAuthenticated && (pathname === '/login' || pathname === '/register')) {
+      // Check for redirect
+      const storedRedirect = sessionStorage.getItem('redirect_after_login')
+      if (storedRedirect) {
+        sessionStorage.removeItem('redirect_after_login')
+        router.push(storedRedirect)
+      } else {
+        // Redirect to dashboard if already authenticated
+        router.push('/dashboard')
+      }
     }
-  }, [state.isAuthenticated, state.isLoading, pathname, router])
+  }, [isAuthenticated, isLoading, pathname, router])
 
   const login = useCallback(async (email: string, password: string) => {
-    setState(prev => ({ ...prev, isLoading: true }))
-    
-    try {
-      const response = await authService.login({ email, password })
-      
-      setState({
-        user: response.user,
-        token: response.access_token,
-        isAuthenticated: true,
-        isLoading: false,
-      })
-      
-      router.push('/dashboard')
-    } catch (error) {
-      setState(prev => ({ ...prev, isLoading: false }))
-      throw error
+    const success = await storeLogin({ email, password })
+    if (success) {
+      // Check for redirect
+      const storedRedirect = sessionStorage.getItem('redirect_after_login')
+      if (storedRedirect) {
+        sessionStorage.removeItem('redirect_after_login')
+        router.push(storedRedirect)
+      } else {
+        router.push('/dashboard')
+      }
     }
-  }, [router])
+    return success
+  }, [storeLogin, router])
+
+  const logout = useCallback(() => {
+    storeLogout()
+    router.push('/login')
+  }, [storeLogout, router])
 
   const register = useCallback(async (data: RegisterRequest) => {
-    setState(prev => ({ ...prev, isLoading: true }))
-    
     try {
       await authService.register(data)
-      setState(prev => ({ ...prev, isLoading: false }))
-      
       // After registration, redirect to login
       router.push('/login')
     } catch (error) {
-      setState(prev => ({ ...prev, isLoading: false }))
       throw error
     }
-  }, [router])
-
-  const logout = useCallback(() => {
-    authService.logout()
-    setState({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: false,
-    })
-    router.push('/login')
   }, [router])
 
   const updateProfile = useCallback(async (data: UpdateProfileRequest) => {
@@ -132,7 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Refresh user data
       const updatedUser = authService.getStoredUser()
       if (updatedUser) {
-        setState(prev => ({ ...prev, user: updatedUser }))
+        // Update in Zustand store
+        useAuth.getState().setUser(updatedUser)
       }
     } catch (error) {
       throw error
@@ -149,16 +100,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const user = await authService.getProfile()
-      setState(prev => ({ ...prev, user }))
+      const profile = await authService.getProfile()
+      if (profile) {
+        // Update in Zustand store
+        useAuth.getState().setUser(profile)
+      }
     } catch (error) {
-      // If refresh fails, logout
-      logout()
+      console.error('Error refreshing user:', error)
     }
-  }, [logout])
+  }, [])
 
-  const contextValue: AuthContextType = {
-    ...state,
+  const value: AuthContextType = {
+    user,
+    token: user ? (authService.getStoredToken() || null) : null,
+    isAuthenticated,
+    isLoading,
+    error: error || null,
     login,
     register,
     logout,
@@ -168,17 +125,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-export function useAuth(): AuthContextType {
+export function useAuthContext(): AuthContextType {
   const context = useContext(AuthContext)
   
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuthContext must be used within an AuthProvider')
   }
   
   return context
@@ -186,7 +143,7 @@ export function useAuth(): AuthContextType {
 
 // Hook for checking if user is admin
 export function useIsAdmin(): boolean {
-  const { user } = useAuth()
+  const { user } = useAuthContext()
   return user?.rol === 'admin'
 }
 

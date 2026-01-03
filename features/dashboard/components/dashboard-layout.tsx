@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { MessageSquare, Send, History, User, LogOut, ChevronDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useAuth } from "@/features/auth/context/auth-context"
+import { useAuth } from "@/features/auth/hooks/use-auth"
 import { ThemeToggle } from "@/components/theme-toggle"
 
 interface DashboardLayoutProps {

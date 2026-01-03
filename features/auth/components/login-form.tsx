@@ -9,32 +9,30 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { MessageSquare, AlertCircle, Loader2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useAuth } from "@/features/auth/context/auth-context"
+import { useAuth } from "@/features/auth/hooks/use-auth"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const { login, isLoading } = useAuth()
+  const { login, isLoading, error: authError, clearError } = useAuth()
+  const [localError, setLocalError] = useState<string | null>(null)
+
+  // Combined error (auth error from store or local error)
+  const error = authError || localError
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
+    setLocalError(null)
+    clearError()
 
     if (!email || !password) {
-      setError("Por favor ingresa tu correo y contraseña")
+      setLocalError("Por favor ingresa tu correo y contraseña")
       return
     }
 
-    try {
-      await login(email, password)
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message)
-      } else {
-        setError("Error al iniciar sesión. Verifica tus credenciales.")
-      }
-    }
+    const success = await login({ email, password })
+    // If login failed, error will be set by the store
+    // No need to catch, as the store handles the error
   }
 
   return (

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { useAuth } from "@/features/auth/context/auth-context"
+import { useAuthContext } from "@/features/auth/context/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import { 
   Loader2, 
@@ -24,7 +24,7 @@ import {
 } from "lucide-react"
 
 export default function ProfilePage() {
-  const { user, updateProfile, changePassword, refreshUser, isLoading } = useAuth()
+  const { user, updateProfile, changePassword, refreshUser } = useAuthContext()
   const { toast } = useToast()
   
   // Profile form state
