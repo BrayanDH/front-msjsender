@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { MessageSquare, Zap, Shield, BarChart3, ArrowRight } from "lucide-react"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function LandingPage() {
   return (
@@ -19,14 +20,17 @@ export default function LandingPage() {
             <Link href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Precios
             </Link>
-            <Link href="/login">
-              <Button variant="outline" size="sm">
-                Iniciar Sesión
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button size="sm">Empezar Gratis</Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Link href="/login">
+                <Button variant="outline" size="sm">
+                  Iniciar Sesión
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button size="sm">Empezar Gratis</Button>
+              </Link>
+            </div>
           </nav>
         </div>
       </header>

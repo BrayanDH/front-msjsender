@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { MessageSquare, Send, History, User, LogOut, ChevronDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/features/auth/context/auth-context"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -74,6 +75,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </Link>
           
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             {/* Navigation */}
             <nav className="hidden md:flex items-center gap-2">
               {navItems.map((item) => {
