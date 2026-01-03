@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Input } from "@/components/ui/input"
@@ -35,32 +35,38 @@ export function RecipientSourceSelector({
     phone: "",
     email: "",
   })
+  
+  // Use ref to store callback and avoid infinite loops
+  const onRecipientsChangeRef = useRef(onRecipientsChange)
+  const prevPhoneRef = useRef("")
+  
+  // Update ref when callback changes
+  useEffect(() => {
+    onRecipientsChangeRef.current = onRecipientsChange
+  }, [onRecipientsChange])
 
   // Derive recipientType from source
   const recipientType = source === "manual" ? "single" : "multiple"
 
-  // Notify parent when manual data changes
-  const notifyRecipientsChange = useCallback((data: typeof manualData) => {
-    if (source === "manual" && data.phone) {
-      onRecipientsChange?.([{ phone: data.phone, name: data.name || undefined }])
-    } else if (source === "manual") {
-      onRecipientsChange?.([])
-    }
-  }, [source, onRecipientsChange])
-
-  // Update recipients when manual data changes
+  // Update recipients when manual phone changes (not on every render)
   useEffect(() => {
-    if (source === "manual") {
-      notifyRecipientsChange(manualData)
+    if (source === "manual" && manualData.phone !== prevPhoneRef.current) {
+      prevPhoneRef.current = manualData.phone
+      if (manualData.phone) {
+        onRecipientsChangeRef.current?.([{ phone: manualData.phone, name: manualData.name || undefined }])
+      } else {
+        onRecipientsChangeRef.current?.([])
+      }
     }
-  }, [manualData, source, notifyRecipientsChange])
+  }, [source, manualData.phone, manualData.name])
 
   const handleSourceChange = (value: SourceType) => {
     setSource(value)
     setSelectedFile(null)
+    prevPhoneRef.current = "" // Reset so manual mode works properly when switching back
     onSourceChange?.(value)
     // Clear recipients when changing source
-    onRecipientsChange?.([])
+    onRecipientsChangeRef.current?.([])
   }
 
   const parseCSVFile = async (file: File): Promise<RecipientInfo[]> => {
@@ -109,7 +115,7 @@ export function RecipientSourceSelector({
         recipients = await parseJSONFile(file)
       }
       
-      onRecipientsChange?.(recipients)
+      onRecipientsChangeRef.current?.(recipients)
     }
   }
 
