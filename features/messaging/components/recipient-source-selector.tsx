@@ -14,15 +14,13 @@ type SourceType = "manual" | "database" | "csv" | "json"
 interface RecipientSourceSelectorProps {
   onSourceChange?: (source: SourceType) => void
   disabled?: boolean
-  recipientType?: "single" | "multiple"
 }
 
 export function RecipientSourceSelector({
   onSourceChange,
   disabled,
-  recipientType = "multiple",
 }: RecipientSourceSelectorProps) {
-  const [source, setSource] = useState<SourceType>(recipientType === "single" ? "manual" : "database")
+  const [source, setSource] = useState<SourceType>("manual")
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [sendToAll, setSendToAll] = useState(false)
   const [manualData, setManualData] = useState({
@@ -30,6 +28,9 @@ export function RecipientSourceSelector({
     phone: "",
     email: "",
   })
+
+  // Derive recipientType from source
+  const recipientType = source === "manual" ? "single" : "multiple"
 
   const handleSourceChange = (value: SourceType) => {
     setSource(value)
@@ -48,32 +49,26 @@ export function RecipientSourceSelector({
     <div className="space-y-4">
       <div className="space-y-3">
         <Label>Fuente de Destinatarios</Label>
-        <RadioGroup value={source} onValueChange={handleSourceChange} disabled={disabled} className="gap-3">
-          {recipientType === "single" && (
-            <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 transition-colors">
-              <RadioGroupItem value="manual" id="manual" className="mt-0.5" />
-              <div className="flex-1 space-y-1">
-                <label htmlFor="manual" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-                  <User className="size-4" />
-                  Entrada Manual
-                </label>
-                <p className="text-xs text-muted-foreground">Ingresa los datos del destinatario directamente</p>
-              </div>
+        <RadioGroup value={source} onValueChange={handleSourceChange} disabled={disabled} className="grid gap-3">
+          <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 transition-colors">
+            <RadioGroupItem value="manual" id="manual" className="mt-0.5" />
+            <div className="flex-1 space-y-1">
+              <label htmlFor="manual" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                <User className="size-4" />
+                Entrada Manual (Individual)
+              </label>
+              <p className="text-xs text-muted-foreground">Envío a una sola persona ingresando sus datos</p>
             </div>
-          )}
+          </div>
 
           <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 transition-colors">
             <RadioGroupItem value="database" id="database" className="mt-0.5" />
             <div className="flex-1 space-y-1">
               <label htmlFor="database" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
                 <Database className="size-4" />
-                Base de Datos
+                Base de Datos (Batch)
               </label>
-              <p className="text-xs text-muted-foreground">
-                {recipientType === "single"
-                  ? "Selecciona un contacto de tu base de datos"
-                  : "Selecciona contactos de tu base de datos existente"}
-              </p>
+              <p className="text-xs text-muted-foreground">Selecciona contactos de tu base de datos existente</p>
             </div>
           </div>
 
@@ -82,13 +77,9 @@ export function RecipientSourceSelector({
             <div className="flex-1 space-y-1">
               <label htmlFor="csv" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
                 <FileUp className="size-4" />
-                Archivo CSV
+                Archivo CSV (Batch)
               </label>
-              <p className="text-xs text-muted-foreground">
-                {recipientType === "single"
-                  ? "Sube un CSV con un contacto (nombre, número, correo)"
-                  : "Sube un archivo CSV con nombre, número, correo"}
-              </p>
+              <p className="text-xs text-muted-foreground">Sube un archivo CSV con múltiples contactos</p>
             </div>
           </div>
 
@@ -97,13 +88,9 @@ export function RecipientSourceSelector({
             <div className="flex-1 space-y-1">
               <label htmlFor="json" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
                 <Upload className="size-4" />
-                Archivo JSON
+                Archivo JSON (Batch)
               </label>
-              <p className="text-xs text-muted-foreground">
-                {recipientType === "single"
-                  ? "Sube un JSON con los datos del contacto"
-                  : "Sube un archivo JSON con los datos de contactos"}
-              </p>
+              <p className="text-xs text-muted-foreground">Sube un archivo JSON con los datos de contactos</p>
             </div>
           </div>
         </RadioGroup>

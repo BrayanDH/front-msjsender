@@ -7,17 +7,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Calendar, Users, User } from "lucide-react"
+import { Calendar } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { RecipientSourceSelector } from "./recipient-source-selector"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+
 
 export function ScheduledSendForm() {
   const [message, setMessage] = useState("")
   const [date, setDate] = useState("")
   const [time, setTime] = useState("")
   const [channels, setChannels] = useState<string[]>(["whatsapp"])
-  const [recipientType, setRecipientType] = useState<"single" | "multiple">("single")
   const [sourceType, setSourceType] = useState<"manual" | "database" | "csv" | "json">("manual")
   const { toast } = useToast()
 
@@ -85,34 +84,7 @@ export function ScheduledSendForm() {
           </div>
         </div>
 
-        <div className="space-y-3">
-          <Label>Tipo de Envío</Label>
-          <RadioGroup
-            value={recipientType}
-            onValueChange={(value: "single" | "multiple") => setRecipientType(value)}
-            className="flex gap-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="single" id="scheduled-single" />
-              <label htmlFor="scheduled-single" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-                <User className="size-4" />
-                Una persona
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="multiple" id="scheduled-multiple" />
-              <label
-                htmlFor="scheduled-multiple"
-                className="flex items-center gap-2 text-sm font-medium cursor-pointer"
-              >
-                <Users className="size-4" />
-                Múltiples personas
-              </label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        <RecipientSourceSelector onSourceChange={setSourceType} recipientType={recipientType} />
+        <RecipientSourceSelector onSourceChange={setSourceType} />
       </div>
 
       <Button type="submit" className="w-full gap-2">
