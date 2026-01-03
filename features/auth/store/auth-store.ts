@@ -17,6 +17,7 @@ interface AuthState {
   tokens: AuthTokens | null
   isAuthenticated: boolean
   isLoading: boolean
+  isHydrated: boolean // Tracks when Zustand finishes loading from localStorage
   error: string | null
 
   // Actions
@@ -38,7 +39,8 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       tokens: null,
       isAuthenticated: false,
-      isLoading: false,
+      isLoading: true, // Start as loading until hydration completes
+      isHydrated: false,
       error: null,
 
       // Initialize auth from persisted data
@@ -66,7 +68,8 @@ export const useAuthStore = create<AuthState>()(
             // Token is still valid, restore session
             set({
               isAuthenticated: true,
-              isLoading: false
+              isLoading: false,
+              isHydrated: true
             })
           } else {
             console.log('[AuthStore] ⏰ Token expired, clearing session')
@@ -76,12 +79,13 @@ export const useAuthStore = create<AuthState>()(
               user: null,
               tokens: null,
               isAuthenticated: false,
-              isLoading: false
+              isLoading: false,
+              isHydrated: true
             })
           }
         } else {
           console.log('[AuthStore] ℹ️ No persisted auth data found')
-          set({ isLoading: false })
+          set({ isLoading: false, isHydrated: true })
         }
       },
 

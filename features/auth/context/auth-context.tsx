@@ -17,13 +17,14 @@ const AuthContext = createContext<AuthContextType | null>(null)
 const PUBLIC_ROUTES = ['/', '/login', '/register']
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated, isLoading, error, login: storeLogin, logout: storeLogout, clearError } = useAuth()
+  const { user, isAuthenticated, isLoading, isHydrated, error, login: storeLogin, logout: storeLogout, clearError } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
 
-  // Route protection effect
+  // Route protection effect - wait until hydration is complete
   useEffect(() => {
-    if (isLoading) return
+    // Don't do anything until Zustand has finished loading from localStorage
+    if (!isHydrated) return
 
     const isPublicRoute = PUBLIC_ROUTES.includes(pathname)
 
@@ -43,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.push('/dashboard')
       }
     }
-  }, [isAuthenticated, isLoading, pathname, router])
+  }, [isAuthenticated, isHydrated, pathname, router])
 
   const login = useCallback(async (email: string, password: string) => {
     const success = await storeLogin({ email, password })
