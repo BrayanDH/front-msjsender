@@ -41,16 +41,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`font-sans antialiased`} suppressHydrationWarning>
+      <body className="font-sans antialiased" suppressHydrationWarning>
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
             <ClientOnly>
               {children}
               <Toaster />
+              <Analytics />
             </ClientOnly>
           </ThemeProvider>
         </AuthProvider>
-        <Analytics />
       </body>
     </html>
   )
