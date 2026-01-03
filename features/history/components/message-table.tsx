@@ -20,16 +20,22 @@ interface MessageTableProps {
 export function MessageTable({ filters }: MessageTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
-  const { messages, isLoading } = useMessageData(filters)
+  const { messages, isLoading, error, total } = useMessageData(filters)
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       sent: { label: "Enviado", variant: "default" as const },
+      delivered: { label: "Entregado", variant: "default" as const },
       pending: { label: "Pendiente", variant: "secondary" as const },
+      queued: { label: "En Cola", variant: "secondary" as const },
       scheduled: { label: "Programado", variant: "outline" as const },
       failed: { label: "Fallido", variant: "destructive" as const },
+      cancelled: { label: "Cancelado", variant: "destructive" as const },
     }
-    const config = statusConfig[status as keyof typeof statusConfig]
+    const config = statusConfig[status as keyof typeof statusConfig] || {
+      label: status,
+      variant: "secondary" as const,
+    }
     return <Badge variant={config.variant}>{config.label}</Badge>
   }
 
@@ -48,7 +54,23 @@ export function MessageTable({ filters }: MessageTableProps) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Cargando mensajes...</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <p className="text-destructive font-medium">Error al cargar mensajes</p>
+            <p className="text-sm text-muted-foreground mt-1">{error}</p>
+          </div>
         </CardContent>
       </Card>
     )
@@ -57,7 +79,9 @@ export function MessageTable({ filters }: MessageTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-balance">Mensajes ({messages.length})</CardTitle>
+        <CardTitle className="text-balance">
+          Mensajes {total > 0 && `(${total} total)`}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {messages.length === 0 ? (
@@ -80,11 +104,36 @@ export function MessageTable({ filters }: MessageTableProps) {
                 <TableBody>
                   {paginatedMessages.map((message) => (
                     <TableRow key={message.id}>
-                      <TableCell className="font-medium">{message.recipient}</TableCell>
-                      <TableCell className="max-w-xs truncate">{message.message}</TableCell>
+                      <TableCell className="font-medium">
+                        <div>
+                          <div>{message.recipient}</div>
+                          {message.recipient_name && (
+                            <div className="text-xs text-muted-foreground">{message.recipient_name}</div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-xs">
+                        <div className="truncate" title={message.message}>
+                          {message.message}
+                        </div>
+                        {message.error_message && (
+                          <div className="text-xs text-destructive mt-1">
+                            {message.error_message}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>{getChannelBadge(message.channel)}</TableCell>
                       <TableCell>{getStatusBadge(message.status)}</TableCell>
-                      <TableCell className="text-muted-foreground">{message.date}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        <div className="text-sm">
+                          {message.date}
+                          {message.scheduledDate && message.status === "scheduled" && (
+                            <div className="text-xs text-muted-foreground">
+                              Programado: {message.scheduledDate}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

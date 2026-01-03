@@ -43,10 +43,13 @@ export function MessageFilters({ filters, onFiltersChange }: MessageFiltersProps
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="queued">En Cola</SelectItem>
             <SelectItem value="sent">Enviado</SelectItem>
+            <SelectItem value="delivered">Entregado</SelectItem>
             <SelectItem value="pending">Pendiente</SelectItem>
             <SelectItem value="scheduled">Programado</SelectItem>
             <SelectItem value="failed">Fallido</SelectItem>
+            <SelectItem value="cancelled">Cancelado</SelectItem>
           </SelectContent>
         </Select>
       </div>
