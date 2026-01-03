@@ -53,32 +53,25 @@ export const useAuthStore = create<AuthState>()(
         console.log('[AuthStore] 🔄 Initializing authentication...')
         const state = get()
 
-        // Check if we have persisted data
+        // Check if we have persisted data with valid token
         if (state.tokens && state.user) {
           console.log('[AuthStore] ✅ Found persisted auth data')
           
-          // Verify session is still valid
-          try {
-            const isValid = await authService.validateSession()
-            
-            if (isValid) {
-              console.log('[AuthStore] ✅ Session is valid')
-              set({
-                isAuthenticated: true,
-                isLoading: false
-              })
-            } else {
-              console.log('[AuthStore] ❌ Session invalid, clearing state')
-              set({
-                user: null,
-                tokens: null,
-                isAuthenticated: false,
-                isLoading: false
-              })
-            }
-          } catch (error) {
-            console.error('[AuthStore] ⚠️ Error validating session:', error)
-            // On error, clear auth state
+          // Check if token has expired locally (no API call needed)
+          const now = Date.now()
+          const expiresAt = state.tokens.expiresAt || 0
+          
+          if (expiresAt > now) {
+            console.log('[AuthStore] ✅ Token still valid, restoring session')
+            // Token is still valid, restore session
+            set({
+              isAuthenticated: true,
+              isLoading: false
+            })
+          } else {
+            console.log('[AuthStore] ⏰ Token expired, clearing session')
+            // Token expired, clear everything
+            authService.logout()
             set({
               user: null,
               tokens: null,
@@ -194,6 +187,8 @@ export const useAuthStore = create<AuthState>()(
             console.error('[AuthStore] ❌ Rehydration error:', error)
           } else if (state) {
             console.log('[AuthStore] ✅ Rehydrated successfully')
+            // Initialize auth AFTER rehydration is complete
+            state.initializeAuth()
           }
         }
       }
